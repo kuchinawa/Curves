@@ -2,7 +2,7 @@
 // Curves (Código Fonte)
 //
 // Criação:     12 Ago 2020
-// Atualização: 12 Ago 2023
+// Atualização: 12 Ago 2024
 // Compilador:  Visual C++ 2022
 //
 // Descrição:   Base para gerar curvas usando Corner-Cutting
@@ -33,6 +33,7 @@ private:
     static const uint MaxVertex = 21 * 4;
     static const uint MaxCurve = 30;
     Vertex vertices[MaxVertex + 1];
+    Vertex linhas[4];
     Vertex curves[MaxCurve * (MaxVertex / 4)];
     Vertex controle[7 * MaxVertex];
 
@@ -45,6 +46,7 @@ private:
     // Buffers para salvar e carregar
     Vertex savedVertices[MaxVertex + 2];
     Vertex savedCurves[MaxCurve * (MaxVertex / 4)];
+    Vertex savedLinhas[4];
     Vertex savedControle[7 * MaxVertex];
     uint savedCount = 0;
     uint savedIndex = 0;
@@ -74,9 +76,10 @@ void Curves::Init()
     const uint vbSize = MaxVertex * sizeof(Vertex);
 
     // cria malha 3D
-    geometry = new Mesh(vbSize, sizeof(Vertex));
+    geometry = new Mesh(4 * sizeof(Vertex), sizeof(Vertex));
+    //geometry = new Mesh(vbSize, sizeof(Vertex));
     curve = new Mesh(MaxCurve * (MaxVertex / 4) * sizeof(Vertex), sizeof(Vertex));
-    control = new Mesh(vbSize * 7, sizeof(Vertex));
+    control = new Mesh(MaxVertex * 7 * sizeof(Vertex), sizeof(Vertex));
 
     // ---------------------------------------
 
@@ -109,14 +112,15 @@ void Curves::Update()
     float y = (cy - my) / cy;
     if (index < MaxVertex){
         vertices[index] = { XMFLOAT3(x, y, 0.0f), XMFLOAT4(Colors::Gray) };
+        linhas[index % 4] = { XMFLOAT3(x, y, 0.0f), XMFLOAT4(Colors::Gray) };
 
-        controle[index * 7 + 0] = { XMFLOAT3(x, y - 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Vértice inferior (antes era superior)
-        controle[index * 7 + 1] = { XMFLOAT3(x - 0.05f, y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Esquerda superior (sem mudança)
-        controle[index * 7 + 2] = { XMFLOAT3(x - 0.03f, y + 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Esquerda inferior (invertido)
-        controle[index * 7 + 3] = { XMFLOAT3(x, y + 0.03f, 0.0f), XMFLOAT4(Colors::LightPink) };        // Centro superior (invertido)
-        controle[index * 7 + 4] = { XMFLOAT3(x + 0.03f, y + 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Direita inferior (invertido)
-        controle[index * 7 + 5] = { XMFLOAT3(x + 0.05f, y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Direita superior (sem mudança)
-        controle[index * 7 + 6] = { XMFLOAT3(x, y - 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Volta ao vértice inferior (antes era superior)
+        controle[index * 7 + 0] = { XMFLOAT3(x, y - 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Vértice inferior (antes era superior)
+        controle[index * 7 + 1] = { XMFLOAT3(x - 0.025f, y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Esquerda superior (sem mudança)
+        controle[index * 7 + 2] = { XMFLOAT3(x - 0.015f, y + 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Esquerda inferior (invertido)
+        controle[index * 7 + 3] = { XMFLOAT3(x, y + 0.015f, 0.0f), XMFLOAT4(Colors::LightPink) };        // Centro superior (invertido)
+        controle[index * 7 + 4] = { XMFLOAT3(x + 0.015f, y + 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Direita inferior (invertido)
+        controle[index * 7 + 5] = { XMFLOAT3(x + 0.025f, y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Direita superior (sem mudança)
+        controle[index * 7 + 6] = { XMFLOAT3(x, y - 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Volta ao vértice inferior (antes era superior)
         
         if (count % 4 == 3)
         {
@@ -148,7 +152,6 @@ void Curves::Update()
 
         if (index < MaxVertex)
             index++;
-        //index = (index + 1) % MaxVertex;
 
         if (count < MaxVertex)
             ++count;
@@ -181,10 +184,10 @@ void Curves::Update()
                 XMFLOAT3 lastp1 = vertices[(index - 2) % MaxVertex].Pos;
 
                 vertices[index] = { XMFLOAT3(x,y, 0.0f), XMFLOAT4(Colors::Gray) };
+                linhas[index % 4] = { XMFLOAT3(x, y, 0.0f), XMFLOAT4(Colors::Gray) };
 
                 if (index < MaxVertex - 1)
                     index++;
-                //index = (index + 1) % MaxVertex;
 
                 if (count < MaxVertex - 1)
                     ++count;
@@ -197,21 +200,21 @@ void Curves::Update()
                         0.0f),
                     XMFLOAT4(Colors::Gray)
                 };
+                linhas[index % 4] = { XMFLOAT3(lastp.x + (lastp.x - lastp1.x), lastp.y + (lastp.y - lastp1.y), 0.0f), XMFLOAT4(Colors::Gray) };
 
                 OutputDebugString(std::to_string(index).c_str());
                 // atualiza vertices para triângulo de controle no mouse
-                controle[index * 7 + 0] = { XMFLOAT3( vertices[index].Pos.x, vertices[index].Pos.y - 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Vértice inferior (antes era superior)
-                controle[index * 7 + 1] = { XMFLOAT3( vertices[index].Pos.x - 0.05f, vertices[index].Pos.y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Esquerda superior (sem mudança)
-                controle[index * 7 + 2] = { XMFLOAT3( vertices[index].Pos.x - 0.03f, vertices[index].Pos.y + 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Esquerda inferior (invertido)
-                controle[index * 7 + 3] = { XMFLOAT3( vertices[index].Pos.x, vertices[index].Pos.y + 0.03f, 0.0f), XMFLOAT4(Colors::LightPink) };        // Centro superior (invertido)
-                controle[index * 7 + 4] = { XMFLOAT3( vertices[index].Pos.x + 0.03f, vertices[index].Pos.y + 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Direita inferior (invertido)
-                controle[index * 7 + 5] = { XMFLOAT3( vertices[index].Pos.x + 0.05f, vertices[index].Pos.y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Direita superior (sem mudança)
-                controle[index * 7 + 6] = { XMFLOAT3( vertices[index].Pos.x, vertices[index].Pos.y - 0.05f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Volta ao vértice inferior (antes era superior)
+                controle[index * 7 + 0] = { XMFLOAT3(vertices[index].Pos.x, vertices[index].Pos.y - 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Vértice inferior (antes era superior)
+                controle[index * 7 + 1] = { XMFLOAT3(vertices[index].Pos.x - 0.025f, vertices[index].Pos.y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Esquerda superior (sem mudança)
+                controle[index * 7 + 2] = { XMFLOAT3(vertices[index].Pos.x - 0.015f, vertices[index].Pos.y + 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Esquerda inferior (invertido)
+                controle[index * 7 + 3] = { XMFLOAT3(vertices[index].Pos.x, vertices[index].Pos.y + 0.015f, 0.0f), XMFLOAT4(Colors::LightPink) };        // Centro superior (invertido)
+                controle[index * 7 + 4] = { XMFLOAT3(vertices[index].Pos.x + 0.015f, vertices[index].Pos.y + 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) }; // Direita inferior (invertido)
+                controle[index * 7 + 5] = { XMFLOAT3(vertices[index].Pos.x + 0.025f, vertices[index].Pos.y, 0.0f), XMFLOAT4(Colors::LightPink) };        // Direita superior (sem mudança)
+                controle[index * 7 + 6] = { XMFLOAT3( vertices[index].Pos.x, vertices[index].Pos.y - 0.025f, 0.0f), XMFLOAT4(Colors::LightPink) };       // Volta ao vértice inferior (antes era superior)
 
 
                 if (index < MaxVertex - 1)
                     index++;
-                //index = (index + 1) % MaxVertex;
 
                 if (count < MaxVertex - 1)
                     ++count;
@@ -220,13 +223,10 @@ void Curves::Update()
 
     }
 
-
-
-
     // Salvar os buffers em memória ao pressionar 'S'
     if (input->KeyPress('S'))
     {
-        for (uint i = 0; i < MaxVertex + 2; ++i)
+        for (uint i = 0; i < MaxVertex + 1; ++i)
         {
             savedVertices[i] = vertices[i];
         }
@@ -238,6 +238,10 @@ void Curves::Update()
         {
             savedControle[i] = controle[i];
         }
+        for (uint i = 0; i < 4; ++i)
+        {
+            savedLinhas[i] = linhas[i];
+        }
         savedCount = count;
         savedIndex = index;
     }
@@ -245,7 +249,7 @@ void Curves::Update()
     // Carregar os buffers da memória ao pressionar 'L'
     if (input->KeyPress('L'))
     {
-        for (uint i = 0; i < MaxVertex + 2; ++i)
+        for (uint i = 0; i < MaxVertex + 1; ++i)
         {
             vertices[i] = savedVertices[i];
         }
@@ -256,6 +260,10 @@ void Curves::Update()
         for (uint i = 0; i < 7 * MaxVertex; ++i)
         {
             controle[i] = savedControle[i];
+        }
+        for (uint i = 0; i < 4; ++i)
+        {
+            linhas[i] = savedLinhas[i];
         }
         count = savedCount;
         index = savedIndex;
@@ -281,11 +289,11 @@ void Curves::Update()
     }
 
 
-
     // copia vértices para o buffer da GPU usando o buffer de Upload
     graphics->ResetCommands();
     graphics->Copy(curves, curve->vertexBufferSize, curve->vertexBufferUpload, curve->vertexBufferGPU);
-    graphics->Copy(vertices, geometry->vertexBufferSize, geometry->vertexBufferUpload, geometry->vertexBufferGPU);
+    //graphics->Copy(vertices, geometry->vertexBufferSize, geometry->vertexBufferUpload, geometry->vertexBufferGPU);
+    graphics->Copy(linhas, geometry->vertexBufferSize, geometry->vertexBufferUpload, geometry->vertexBufferGPU);
     graphics->Copy(controle, control->vertexBufferSize, control->vertexBufferUpload, control->vertexBufferGPU);
     graphics->SubmitCommands();
     //if (index < MaxVertex)
@@ -322,14 +330,15 @@ void Curves::Display()
     // submete comandos de configuração do pipeline
     graphics->CommandList()->SetGraphicsRootSignature(rootSignature);
     graphics->CommandList()->IASetVertexBuffers(0, 1, geometry->VertexBufferView());
-    graphics->CommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
+    graphics->CommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
     // submete comandos de desenho
     if (!finalizado)
-		graphics->CommandList()->DrawInstanced(count + 1, 1, 0, 0);
+        graphics->CommandList()->DrawInstanced((index % 4) + 1, 1, 0, 0);
 	else
-		graphics->CommandList()->DrawInstanced(count, 1, 0, 0);
+		graphics->CommandList()->DrawInstanced((index % 4), 1, 0, 0);
 
+    graphics->CommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
     graphics->CommandList()->IASetVertexBuffers(0, 1, curve->VertexBufferView());
 
     if (count % 4 == 3)
@@ -344,9 +353,9 @@ void Curves::Display()
     graphics->CommandList()->IASetVertexBuffers(0, 1, control->VertexBufferView());
 
 
-    for(uint i = 0; i < index; ++i)
+    for (uint i = max(0, index - 2); i < index + 1; ++i)
 	{
-       graphics->CommandList()->DrawInstanced(7, 1, i * 7, 0);
+        graphics->CommandList()->DrawInstanced(7, 1, i * 7, 0);
 	}
 
 
